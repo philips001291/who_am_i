@@ -16,7 +16,7 @@
   "main": "./out/extension.js",
   "contributes": {
     "views": {
-        "explorer": [
+      "explorer": [
         {
           "id": "domVisualizer",
           "name": "DOM VISUALIZER"
@@ -27,8 +27,21 @@
       {
         "command": "helloworld.openWhoAmIWorkspace",
         "title": "Open Who Am I Workspace"
+      },
+      {
+        "command": "helloworld.openAsWebview",
+        "title": "Open as WebView"
       }
-    ]
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "helloworld.openAsWebview",
+          "when": "resourceFilename == who_am_i.html",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -39,14 +52,17 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.105.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
+    "@types/vscode": "^1.105.0",
     "@typescript-eslint/eslint-plugin": "^8.45.0",
     "@typescript-eslint/parser": "^8.45.0",
-    "eslint": "^9.36.0",
-    "typescript": "^5.9.3",
     "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.36.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "node-html-parser": "^7.0.1"
   }
 }

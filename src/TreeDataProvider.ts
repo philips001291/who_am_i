@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
-export class NodeDependenciesProvider implements vscode.TreeDataProvider<Dependency> {
+export class DOMVisualizerProvider implements vscode.TreeDataProvider<Dependency> {
   constructor(private workspaceRoot: string) {}
 
   getTreeItem(element: Dependency): vscode.TreeItem {
@@ -15,67 +15,85 @@ export class NodeDependenciesProvider implements vscode.TreeDataProvider<Depende
     
     if (!this.workspaceRoot) {
       console.log('No workspace root found');
-      vscode.window.showInformationMessage('No dependency in empty workspace');
+      vscode.window.showInformationMessage('No workspace found');
       return Promise.resolve([]);
     }
 
     if (element) {
-      const depPackageJsonPath = path.join(this.workspaceRoot, 'node_modules', element.label, 'package.json');
-      console.log('Looking for dependency package.json at:', depPackageJsonPath);
-      return Promise.resolve(
-        this.getDepsInPackageJson(depPackageJsonPath)
-      );
+      // Return child elements if any
+      return Promise.resolve(element.children || []);
     } else {
-      const packageJsonPath = path.join(this.workspaceRoot, 'package.json');
-      console.log('Looking for root package.json at:', packageJsonPath);
+      // Look for who_am_i.html instead of package.json
+      const htmlFilePath = path.join(this.workspaceRoot, 'who_am_i.html');
+      console.log('Looking for who_am_i.html at:', htmlFilePath);
       
-      if (this.pathExists(packageJsonPath)) {
-        console.log('package.json found, getting dependencies');
-        const deps = this.getDepsInPackageJson(packageJsonPath);
-        console.log('Found dependencies:', deps.length);
-        return Promise.resolve(deps);
+      if (this.pathExists(htmlFilePath)) {
+        console.log('who_am_i.html found, parsing HTML structure');
+        const htmlElements = this.parseHTMLFile(htmlFilePath);
+        console.log('Found HTML elements:', htmlElements.length);
+        return Promise.resolve(htmlElements);
       } else {
-        console.log('No package.json found in workspace');
-        vscode.window.showInformationMessage('Workspace has no package.json');
+        console.log('No who_am_i.html found in workspace');
+        vscode.window.showInformationMessage('Workspace has no who_am_i.html');
         return Promise.resolve([]);
       }
     }
   }
 
   /**
-   * Given the path to package.json, read all its dependencies and devDependencies.
+   * Parse HTML file and extract DOM elements with IDs
    */
-  private getDepsInPackageJson(packageJsonPath: string): Dependency[] {
-    if (this.pathExists(packageJsonPath)) {
-      const toDep = (moduleName: string, version: string): Dependency => {
-        if (this.pathExists(path.join(this.workspaceRoot, 'node_modules', moduleName))) {
-          return new Dependency(
-            moduleName,
-            version,
-            vscode.TreeItemCollapsibleState.Collapsed
-          );
-        } else {
-          return new Dependency(moduleName, version, vscode.TreeItemCollapsibleState.None);
-        }
-      };
-
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-
-      const deps = packageJson.dependencies
-        ? Object.keys(packageJson.dependencies).map(dep =>
-            toDep(dep, packageJson.dependencies[dep])
-          )
-        : [];
-      const devDeps = packageJson.devDependencies
-        ? Object.keys(packageJson.devDependencies).map(dep =>
-            toDep(dep, packageJson.devDependencies[dep])
-          )
-        : [];
-      return deps.concat(devDeps);
-    } else {
+  private parseHTMLFile(htmlFilePath: string): Dependency[] {
+    try {
+      const htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
+      return this.extractHTMLElements(htmlContent);
+    } catch (error) {
+      console.error('Error reading HTML file:', error);
       return [];
     }
   }
+
+  private extractHTMLElements(htmlContent: string): Dependency[] {
+    const elements: Dependency[] = [];
+    
+    console.log('HTML content length:', htmlContent.length);
+    console.log('First 500 chars of HTML:', htmlContent.substring(0, 500));
+    
+    // Simple regex to find HTML tags with IDs
+    const tagRegex = /<(\w+)([^>]*id\s*=\s*["']([^"']+)["'][^>]*)>/g;
+    
+    let match;
+    let matchCount = 0;
+    while ((match = tagRegex.exec(htmlContent)) !== null) {
+      matchCount++;
+      const tagName = match[1];
+      const attributes = match[2];
+      const id = match[3];
+      
+      console.log(`Found element ${matchCount}: <${tagName}> with id="${id}"`);
+      
+      // Get class if present
+      const classMatch = attributes.match(/class\s*=\s*["']([^"']+)["']/);
+      const className = classMatch ? classMatch[1].split(' ')[0] : '';
+      
+      const label = `<${tagName}> #${id}`;
+      const description = className ? `.${className}` : tagName;
+      
+      elements.push(new Dependency(
+        label,
+        description,
+        vscode.TreeItemCollapsibleState.None
+      ));
+    }
+    
+    console.log(`Total matches found: ${matchCount}, elements created: ${elements.length}`);
+    
+    return elements;
+  }
+
+  /**
+   * Given the path to package.json, read all its dependencies and devDependencies.
+   */
 
   private pathExists(p: string): boolean {
     try {
@@ -88,6 +106,8 @@ export class NodeDependenciesProvider implements vscode.TreeDataProvider<Depende
 }
 
 class Dependency extends vscode.TreeItem {
+  public children: Dependency[] = [];
+
   constructor(
     public readonly label: string,
     private version: string,
