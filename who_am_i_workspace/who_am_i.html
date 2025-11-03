@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" id="html-root">
+<head id="head-section">
+    <meta charset="UTF-8" id="charset-meta">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" id="viewport-meta">
+    <title id="page-title">Who Am I? - IP Information Tool</title>
+    <link rel="stylesheet" href="who_am_i.css" id="main-stylesheet">
+</head>
+<body id="main-body">
+    <header id="main-header">
+        <h1 id="main-heading">Who Am I?</h1>
+        <p id="subtitle">Discover your public IP and location information</p>
+    </header>
+
+    <main id="main-content">
+        <!-- IP Address Section -->
+        <section id="ip-section" class="card">
+            <h2 id="ip-section-title">Your IP Address</h2>
+            <div id="ip-container">
+                <button id="get-ip-btn" class="primary-btn">Find My IP Address</button>
+                <div id="ip-display" class="hidden">
+                    <p id="ip-label">Your Public IP:</p>
+                    <span id="ip-address" class="highlight-text"></span>
+                </div>
+                <div id="ip-loading" class="loading hidden">
+                    <div id="ip-spinner" class="spinner"></div>
+                    <p id="ip-loading-text">Getting your IP address...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- IP Details Section -->
+        <section id="details-section" class="card hidden">
+            <h2 id="details-section-title">Your Location Details</h2>
+            <div id="details-container">
+                <button id="get-details-btn" class="secondary-btn">Get Location Details</button>
+                <div id="details-display" class="hidden">
+                    <div id="location-info" class="info-grid">
+                        <div id="city-info" class="info-item">
+                            <label id="city-label">City:</label>
+                            <span id="city-value" class="info-value"></span>
+                        </div>
+                        <div id="region-info" class="info-item">
+                            <label id="region-label">Region:</label>
+                            <span id="region-value" class="info-value"></span>
+                        </div>
+                        <div id="country-info" class="info-item">
+                            <label id="country-label">Country:</label>
+                            <span id="country-value" class="info-value"></span>
+                        </div>
+                        <div id="timezone-info" class="info-item">
+                            <label id="timezone-label">Timezone:</label>
+                            <span id="timezone-value" class="info-value"></span>
+                        </div>
+                        <div id="isp-info" class="info-item">
+                            <label id="isp-label">ISP:</label>
+                            <span id="isp-value" class="info-value"></span>
+                        </div>
+                        <div id="coordinates-info" class="info-item">
+                            <label id="coordinates-label">Coordinates:</label>
+                            <span id="coordinates-value" class="info-value"></span>
+                        </div>
+                    </div>
+                </div>
+                <div id="details-loading" class="loading hidden">
+                    <div id="details-spinner" class="spinner"></div>
+                    <p id="details-loading-text">Getting your location details...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Error Section -->
+        <section id="error-section" class="card error-card hidden">
+            <h2 id="error-title">Oops! Something went wrong</h2>
+            <p id="error-message"></p>
+            <button id="retry-btn" class="primary-btn">Try Again</button>
+        </section>
+    </main>
+
+    <footer id="main-footer">
+        <p id="footer-text">Powered by IPify and IPinfo APIs</p>
+        <p id="privacy-note">Your data is not stored and is only used for display purposes.</p>
+    </footer>
+
+    <script src="who_am_i.js" id="main-script"></script>
+</body>
+</html>
