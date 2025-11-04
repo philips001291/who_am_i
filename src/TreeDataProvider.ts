@@ -54,41 +54,96 @@ export class DOMVisualizerProvider implements vscode.TreeDataProvider<Dependency
   }
 
   private extractHTMLElements(htmlContent: string): Dependency[] {
-    const elements: Dependency[] = [];
-    
     console.log('HTML content length:', htmlContent.length);
-    console.log('First 500 chars of HTML:', htmlContent.substring(0, 500));
     
-    // Simple regex to find HTML tags with IDs
-    const tagRegex = /<(\w+)([^>]*id\s*=\s*["']([^"']+)["'][^>]*)>/g;
+    // Parse HTML into a hierarchical structure
+    const rootElements = this.parseHTMLHierarchy(htmlContent);
     
+    console.log(`Built hierarchical tree with ${rootElements.length} root elements`);
+    
+    return rootElements;
+  }
+
+  private parseHTMLHierarchy(htmlContent: string): Dependency[] {
+    // Stack to track parent elements during parsing
+    const stack: Dependency[] = [];
+    const roots: Dependency[] = [];
+    
+    // Self-closing tags that don't have children
+    const selfClosingTags = new Set(['img', 'br', 'hr', 'input', 'meta', 'link', 'source', 'area', 'base', 'col', 'embed', 'track', 'wbr']);
+    
+    // Find all opening and closing tags
+    const tagRegex = /<\/?(\w+)([^>]*)>/g;
     let match;
-    let matchCount = 0;
+    
     while ((match = tagRegex.exec(htmlContent)) !== null) {
-      matchCount++;
-      const tagName = match[1];
+      const fullMatch = match[0];
+      const tagName = match[1].toLowerCase();
       const attributes = match[2];
-      const id = match[3];
       
-      console.log(`Found element ${matchCount}: <${tagName}> with id="${id}"`);
+      // Skip doctype, comments, etc.
+      if (tagName === '!doctype' || fullMatch.startsWith('<!--')) {
+        continue;
+      }
       
-      // Get class if present
-      const classMatch = attributes.match(/class\s*=\s*["']([^"']+)["']/);
-      const className = classMatch ? classMatch[1].split(' ')[0] : '';
+      const isClosingTag = fullMatch.startsWith('</');
+      const isSelfClosing = fullMatch.endsWith('/>') || selfClosingTags.has(tagName);
       
-      const label = `<${tagName}> #${id}`;
-      const description = className ? `.${className}` : tagName;
-      
-      elements.push(new Dependency(
-        label,
-        description,
-        vscode.TreeItemCollapsibleState.None
-      ));
+      if (isClosingTag) {
+        // Pop from stack when we find a closing tag
+        if (stack.length > 0 && stack[stack.length - 1].tagName === tagName) {
+          stack.pop();
+        }
+      } else {
+        // Opening tag - create element
+        const id = this.extractAttribute(attributes, 'id');
+        const className = this.extractAttribute(attributes, 'class');
+        
+        let label = `<${tagName}>`;
+        if (id) {
+          label += ` #${id}`;
+        }
+        if (className) {
+          label += ` .${className.split(' ')[0]}`;
+        }
+        
+        const description = id || className || tagName;
+        
+        // Determine collapsible state
+        let collapsibleState = vscode.TreeItemCollapsibleState.None;
+        if (!isSelfClosing && !selfClosingTags.has(tagName)) {
+          collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+        }
+        
+        const element = new Dependency(label, description, collapsibleState);
+        element.tagName = tagName;
+        element.elementId = id || '';
+        element.className = className || '';
+        
+        // Add to parent or root
+        if (stack.length > 0) {
+          const parent = stack[stack.length - 1];
+          parent.children.push(element);
+          // Update parent to be expandable if it has children
+          parent.updateCollapsibleState();
+        } else {
+          roots.push(element);
+        }
+        
+        // Push to stack if not self-closing
+        if (!isSelfClosing) {
+          stack.push(element);
+        }
+      }
     }
     
-    console.log(`Total matches found: ${matchCount}, elements created: ${elements.length}`);
-    
-    return elements;
+    return roots;
+  }
+
+  private extractAttribute(attributes: string, attrName: string): string {
+    const regex = new RegExp(`${attrName}\\s*=\\s*["']([^"']+)["']`, 'i');
+    const match = attributes.match(regex);
+    return match ? match[1] : '';
   }
 
   /**
@@ -107,19 +162,33 @@ export class DOMVisualizerProvider implements vscode.TreeDataProvider<Dependency
 
 class Dependency extends vscode.TreeItem {
   public children: Dependency[] = [];
+  public tagName: string = '';
+  public elementId: string = '';
+  public className: string = '';
 
   constructor(
     public readonly label: string,
     private version: string,
-    public readonly collapsibleState: vscode.TreeItemCollapsibleState
+    collapsibleState: vscode.TreeItemCollapsibleState
   ) {
     super(label, collapsibleState);
     this.tooltip = `${this.label}-${this.version}`;
     this.description = this.version;
   }
 
-  iconPath = {
-    light: vscode.Uri.file(path.join(__filename, '..', '..', 'resources', 'light', 'dependency.svg')),
-    dark: vscode.Uri.file(path.join(__filename, '..', '..', 'resources', 'dark', 'dependency.svg'))
-  };
+  updateCollapsibleState() {
+    if (this.children.length > 0) {
+      // Create a new TreeItem with updated collapsible state
+      const newItem = new Dependency(this.label, this.version, vscode.TreeItemCollapsibleState.Collapsed);
+      newItem.children = this.children;
+      newItem.tagName = this.tagName;
+      newItem.elementId = this.elementId;
+      newItem.className = this.className;
+      
+      // Copy properties to this instance
+      this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+    }
+  }
+
+  iconPath = new vscode.ThemeIcon('symbol-misc');
 }
