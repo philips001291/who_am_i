@@ -10,8 +10,7 @@
     "Other"
   ],
   "activationEvents": [
-    "workspaceContains:who_am_i.html",
-    "onCommand:helloworld.openWhoAmIWorkspace"
+    "workspaceContains:who_am_i.html"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -31,6 +30,14 @@
       {
         "command": "helloworld.openAsWebview",
         "title": "Open as WebView"
+      },
+      {
+        "command": "helloworld.showStoredIpAddress",
+        "title": "Who Am I: Show Stored IP Address"
+      },
+      {
+        "command": "helloworld.clearStoredIpAddress",
+        "title": "Who Am I: Clear Stored IP Address"
       }
     ],
     "menus": {
@@ -41,6 +48,16 @@
           "group": "navigation"
         }
       ]
+    },
+    "configuration": {
+      "title": "Who Am I",
+      "properties": {
+        "public_ip_address": {
+          "type": "string",
+          "default": null,
+          "description": "Your public IP address (automatically saved by Who Am I extension)"
+        }
+      }
     }
   },
   "scripts": {

@@ -16,7 +16,7 @@
   "main": "./out/extension.js",
   "contributes": {
     "views": {
-        "explorer": [
+      "explorer": [
         {
           "id": "nodeDependencies",
           "name": "Node Dependencies"
@@ -39,7 +39,6 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.105.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
     "@typescript-eslint/eslint-plugin": "^8.45.0",

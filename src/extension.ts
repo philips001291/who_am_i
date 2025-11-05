@@ -151,8 +151,95 @@ export function activate(context: vscode.ExtensionContext) {
           ],
         }
       );
+
+      // Handle messages from the webview
+      panel.webview.onDidReceiveMessage(
+        async (message) => {
+          switch (message.command) {
+            case 'saveIpAddress':
+              try {
+                // Save IP address to user settings
+                const config = vscode.workspace.getConfiguration();
+                await config.update('public_ip_address', message.ipAddress, vscode.ConfigurationTarget.Global);
+                
+                // Send confirmation back to webview
+                panel.webview.postMessage({
+                  command: 'ipAddressSaved',
+                  success: true,
+                  ipAddress: message.ipAddress
+                });
+                
+                // Show information message to user
+                vscode.window.showInformationMessage(`IP address ${message.ipAddress} saved to user settings.`);
+                
+                console.log(`IP address saved to user settings: ${message.ipAddress}`);
+              } catch (error) {
+                console.error('Error saving IP address to settings:', error);
+                panel.webview.postMessage({
+                  command: 'ipAddressSaved',
+                  success: false,
+                  error: error instanceof Error ? error.message : 'Unknown error'
+                });
+                vscode.window.showErrorMessage('Failed to save IP address to settings.');
+              }
+              break;
+            case 'getStoredIpAddress':
+              try {
+                // Get stored IP address from user settings
+                const config = vscode.workspace.getConfiguration();
+                const storedIp = config.get('public_ip_address') as string;
+                
+                panel.webview.postMessage({
+                  command: 'storedIpAddress',
+                  ipAddress: storedIp || null
+                });
+              } catch (error) {
+                console.error('Error getting stored IP address:', error);
+                panel.webview.postMessage({
+                  command: 'storedIpAddress',
+                  ipAddress: null
+                });
+              }
+              break;
+          }
+        },
+        undefined,
+        context.subscriptions
+      );
+
       // Load content from the HTML file
       panel.webview.html = getWebviewContentFromFile(context);
+    })
+  );
+
+  // Add command to show stored IP address
+  context.subscriptions.push(
+    vscode.commands.registerCommand("helloworld.showStoredIpAddress", () => {
+      try {
+        const config = vscode.workspace.getConfiguration();
+        const storedIp = config.get('public_ip_address') as string;
+        
+        if (storedIp) {
+          vscode.window.showInformationMessage(`Stored IP Address: ${storedIp}`);
+        } else {
+          vscode.window.showInformationMessage('No IP address has been stored yet. Use the "Who Am I" tool to fetch and save your IP address.');
+        }
+      } catch (error) {
+        vscode.window.showErrorMessage('Failed to retrieve stored IP address.');
+      }
+    })
+  );
+
+  // Add command to clear stored IP address
+  context.subscriptions.push(
+    vscode.commands.registerCommand("helloworld.clearStoredIpAddress", async () => {
+      try {
+        const config = vscode.workspace.getConfiguration();
+        await config.update('public_ip_address', undefined, vscode.ConfigurationTarget.Global);
+        vscode.window.showInformationMessage('Stored IP address has been cleared.');
+      } catch (error) {
+        vscode.window.showErrorMessage('Failed to clear stored IP address.');
+      }
     })
   );
 }
@@ -183,7 +270,87 @@ function getWebviewContentFromFile(context: vscode.ExtensionContext): string {
     const cssContent = fs.readFileSync(cssPath, "utf8");
     const jsContent = fs.readFileSync(jsPath, "utf8");
 
-    // Inline the CSS and JS into the HTML for webview compatibility
+    // Modify the JavaScript to add VS Code API communication
+    const modifiedJsContent = `
+// VS Code API for webview communication
+const vscode = acquireVsCodeApi();
+
+${jsContent}
+
+// Override the getIpAddress method to save to VS Code settings
+const originalClass = WhoAmI;
+class WhoAmIExtended extends originalClass {
+    async getIpAddress() {
+        try {
+            this.showLoading('ip');
+            this.hideError();
+
+            // Get IP address from API
+            const response = await fetch('https://api.ipify.org?format=json');
+            
+            if (!response.ok) {
+                throw new Error(\`HTTP error! status: \${response.status}\`);
+            }
+
+            const data = await response.json();
+            this.ipAddress = data.ip;
+
+            // Save IP address to VS Code user settings
+            vscode.postMessage({
+                command: 'saveIpAddress',
+                ipAddress: this.ipAddress
+            });
+
+            this.hideLoading('ip');
+            this.displayIpAddress(this.ipAddress);
+            this.showDetailsSection();
+
+        } catch (error) {
+            console.error('Error getting IP address:', error);
+            this.hideLoading('ip');
+            this.showError('Failed to get your IP address. Please check your internet connection and try again.');
+        }
+    }
+
+    init() {
+        super.init();
+        
+        // Listen for messages from the extension
+        window.addEventListener('message', event => {
+            const message = event.data;
+            switch (message.command) {
+                case 'ipAddressSaved':
+                    if (message.success) {
+                        console.log('IP address successfully saved to user settings:', message.ipAddress);
+                    } else {
+                        console.error('Failed to save IP address:', message.error);
+                    }
+                    break;
+                case 'storedIpAddress':
+                    if (message.ipAddress) {
+                        console.log('Found stored IP address:', message.ipAddress);
+                        // Optionally pre-populate the IP if you want
+                        // this.ipAddress = message.ipAddress;
+                        // this.displayIpAddress(message.ipAddress);
+                    }
+                    break;
+            }
+        });
+
+        // Request stored IP address on initialization
+        vscode.postMessage({
+            command: 'getStoredIpAddress'
+        });
+    }
+}
+
+// Replace the global initialization
+document.addEventListener('DOMContentLoaded', () => {
+    window.whoAmIApp = new WhoAmIExtended();
+});
+`;
+
+    // Inline the CSS and modified JS into the HTML for webview compatibility
     const webviewContent = htmlContent
       .replace(
         '<link rel="stylesheet" href="who_am_i.css" id="main-stylesheet">',
@@ -191,7 +358,7 @@ function getWebviewContentFromFile(context: vscode.ExtensionContext): string {
       )
       .replace(
         '<script src="who_am_i.js" id="main-script"></script>',
-        `<script id="main-script">\n${jsContent}\n</script>`
+        `<script id="main-script">\n${modifiedJsContent}\n</script>`
       );
 
     return webviewContent;
