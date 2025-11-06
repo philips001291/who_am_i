@@ -38,6 +38,26 @@
       {
         "command": "helloworld.clearStoredIpAddress",
         "title": "Who Am I: Clear Stored IP Address"
+      },
+      {
+        "command": "helloworld.removeHtmlElement",
+        "title": "Who Am I: Remove HTML Element"
+      },
+      {
+        "command": "helloworld.recoverOriginalFile",
+        "title": "Who Am I: Recover Original File"
+      },
+      {
+        "command": "helloworld.showBackups",
+        "title": "Who Am I: Show Available Backups"
+      },
+      {
+        "command": "helloworld.clearBackups",
+        "title": "Who Am I: Clear All Backups"
+      },
+      {
+        "command": "helloworld.backupCurrentFile",
+        "title": "Who Am I: Backup Current File"
       }
     ],
     "menus": {
@@ -49,6 +69,14 @@
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "helloworld.removeHtmlElement",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "editorTextFocus && resourceExtname == '.html'"
+      }
+    ],
     "configuration": {
       "title": "Who Am I",
       "properties": {
@@ -56,6 +84,21 @@
           "type": "string",
           "default": null,
           "description": "Your public IP address (automatically saved by Who Am I extension)"
+        },
+        "whoAmI.backup_who_am_i.html": {
+          "type": "string",
+          "default": null,
+          "description": "Backup of original who_am_i.html file content"
+        },
+        "whoAmI.backup_who_am_i.css": {
+          "type": "string",
+          "default": null,
+          "description": "Backup of original who_am_i.css file content"
+        },
+        "whoAmI.backup_who_am_i.js": {
+          "type": "string",
+          "default": null,
+          "description": "Backup of original who_am_i.js file content"
         }
       }
     }

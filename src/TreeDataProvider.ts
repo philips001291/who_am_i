@@ -3,7 +3,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export class DOMVisualizerProvider implements vscode.TreeDataProvider<Dependency> {
+  private _onDidChangeTreeData: vscode.EventEmitter<Dependency | undefined | null | void> = new vscode.EventEmitter<Dependency | undefined | null | void>();
+  readonly onDidChangeTreeData: vscode.Event<Dependency | undefined | null | void> = this._onDidChangeTreeData.event;
+
   constructor(private workspaceRoot: string) {}
+
+  refresh(): void {
+    this._onDidChangeTreeData.fire();
+  }
 
   getTreeItem(element: Dependency): vscode.TreeItem {
     return element;
