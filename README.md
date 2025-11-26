@@ -1,71 +1,137 @@
-# helloworld README
+# Who Am I — VS Code Extension
 
-This is the README for your extension "helloworld". After writing up a brief description, we recommend including the following sections.
+**Who Am I** is an educational and interactive Visual Studio Code extension designed to showcase how to work with Webviews, TreeViews, message passing, DOM parsing, settings storage, and workspace integration inside a custom extension.
 
-## Features
-
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+It is built as a practical onboarding-style project, demonstrating real-world extension development concepts in a simple and visual way.
 
 ---
 
-## Following extension guidelines
+## 🚀 Features
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+### **1. Interactive Webview ("Who Am I" Page)**  
+Displays a responsive HTML interface that:
+- Fetches the user's **public IP address** using the IPify API.
+- Retrieves extended information (location, hostname, ISP, etc.) using IPinfo (if enabled).
+- Shows loading states, error states, and a details section dynamically.
+- Automatically saves fetched IP to VS Code user settings via `acquireVsCodeApi()` messaging.
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+### **2. DOM Visualizer TreeView**  
+A custom Explorer view that:
+- Parses `who_am_i.html` using `node-html-parser`.
+- Shows all HTML elements as nested Tree Items.
+- Updates when the HTML file is changed or refreshed.
+- Supports synchronized removal of elements through keybindings.
 
-## Working with Markdown
+### **3. HTML Element Removal (Keybinding: Ctrl+Alt+R)**  
+After the user selects an HTML tag inside the editor:
+- Pressing **Ctrl+Alt+R** removes that element **and all its children**.
+- The Webview and TreeView update immediately after the file is saved.
+- Ensures consistent structure across all extension components.
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+### **4. Workspace Initialization & Requirements Check**  
+The extension activates only if the workspace contains a **who_am_i.html** file.  
+Upon activation:
+- The user is notified the extension is active.
+- Quick actions are offered: *Open file* or *View in browser*.
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+### **5. Original File Backup & Recovery**  
+Upon first activation:
+- The extension saves the **original who_am_i.html** content.
+- Users can restore the original version at any time via the Command Palette:
 
-## For more information
+**Command:** `Who Am I: Recover original file`
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+This resets:
+- HTML file  
+- TreeView  
+- Webview  
 
-**Enjoy!**
+---
+
+## 📦 Requirements
+
+No external dependencies are required for basic functionality.
+
+Optional:
+- Internet access if IP-based APIs are used (IPify, IPinfo).
+
+The extension uses:
+- VS Code Webview API  
+- TreeDataProvider  
+- Node HTML Parser  
+- Workspace and User Settings API  
+
+All dependencies install automatically when the extension is built.
+
+---
+
+## ⚙️ Extension Settings
+
+This extension contributes the following settings:
+
+### **`whoAmI.saveBackup`**
+- **Type:** boolean  
+- **Default:** true  
+- If enabled, the original HTML file is backed up on first activation.
+
+### **`whoAmI.originalContent`**
+- Internal setting storing the backup contents of `who_am_i.html`.
+
+### **`whoAmI.lastIpAddress`**
+- Stores the most recently fetched public IP address from the Webview script.
+
+---
+
+## 🐞 Known Issues
+
+- Removing deeply nested HTML elements may cause overlapping refresh events in both TreeView and Webview.
+- Requires workspace reload after deleting the entire `who_am_i.html` file.
+- DOM Visualizer may display empty text nodes depending on HTML formatting.
+
+---
+
+## 📝 Release Notes
+
+### **1.0.0**
+- Initial release of the *Who Am I* extension.
+- Added Webview with dynamic IP fetching.
+- Added DOM Visualizer Explorer View.
+- Added removal keybinding (Ctrl+Alt+R).
+- Added workspace settings for backup and recovery.
+
+### **1.1.0**
+- Improved synchronization between Webview and TreeView.
+- Added better error handling for API calls.
+- Stabilized HTML element parsing.
+
+### **1.2.0**
+- Added “Recover original file” command.
+- Improved activation logic and workspace validation.
+
+---
+
+## 📘 Following Extension Guidelines
+
+Make sure to follow official VS Code extension development guidelines:
+
+- https://code.visualstudio.com/api/references/extension-guidelines
+
+---
+
+## ✍️ Working With Markdown
+
+Useful shortcuts in VS Code:
+- Split editor: `Ctrl+\`
+- Preview Markdown: `Ctrl+Shift+V`
+- Markdown snippets: `Ctrl+Space`
+
+---
+
+## 🔗 Additional Resources
+
+- **VS Code Markdown Documentation:** https://code.visualstudio.com/docs/languages/markdown  
+- **General Markdown Syntax:** https://help.github.com/articles/markdown-basics/  
+
+---
+
+**Enjoy using the Who Am I extension!**
